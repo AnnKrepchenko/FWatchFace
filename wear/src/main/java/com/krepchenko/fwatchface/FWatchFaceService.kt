@@ -41,6 +41,7 @@ import com.krepchenko.fwatchface.utils.FWatchFaceUtil
 import com.krepchenko.fwatchface.utils.FWatchFaceUtil.FetchConfigDataMapCallback
 import com.krepchenko.fwatchface.utils.FWatchFaceUtil.fetchConfigDataMap
 import com.krepchenko.fwatchface.utils.NumberWordConverter
+import com.krepchenko.fwatchface.utils.TimeToTextUtil
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -92,7 +93,6 @@ class FWatchFaceService : CanvasWatchFaceService() {
         }
         internal var mRegisteredTimeZoneReceiver = false
 
-        private val begin = "It's a fucking\n"
         internal var mBackgroundPaint: Paint? = null
         internal var mHourPaint: Paint? = null
         internal var mMinutePaint: Paint? = null
@@ -333,72 +333,26 @@ class FWatchFaceService : CanvasWatchFaceService() {
         }
 
 
-        private fun convertTo12Hour(hour: Int): Int {
-            val result = hour.rem(12)
-            return if (result == 0) 12 else result
-        }
+
 
         override fun onDraw(canvas: Canvas?, bounds: Rect?) {
             mTime?.setToNow()
             canvas!!.drawRect(0f, 0f, bounds!!.width().toFloat(), bounds.height().toFloat(), mBackgroundPaint)
             val x = mXOffset
             var y = mYOffset
-            canvas.drawText(begin, x, y, mHourPaint)
+            canvas.drawText(TimeToTextUtil.getFirstLine(), x, y, mHourPaint)
             y += textSize
-            var hour = convertTo12Hour(mTime!!.hour)
+            var hour = TimeToTextUtil.convertTo12Hour(mTime!!.hour)
             val minute = mTime!!.minute
-            Log.i(TAG, hour.toString() + " " + minute)
-            if (minute in 0..60) {
-                if(minute!= 15 || minute!=45) {
-                    canvas.drawText(getMinutes(if(minute>30) 30-minute.rem(30) else minute), x, y, mHourPaint)
-                    if (minute > 12)
-                        y += textSize
-                    canvas.drawText(getMinutesText(minute), x, y, mHourPaint)
-                } else{
-                    canvas.drawText("quarter", x, y, mHourPaint)
-                }
-
+            if (minute>0) {
+                canvas.drawText(TimeToTextUtil.getSecondLine(minute), x, y, mHourPaint)
                 y += textSize
-                var hourText = ""
-                if (minute > 30) {
-                    hour = (hour + 1).rem(12)
-                    hourText += "to "
-                } else {
-                    hourText += "past "
+                if (minute in 21..29 || minute in 31..39) {
+                    canvas.drawText(TimeToTextUtil.getThirdLine(minute), x, y, mHourPaint)
+                    y += textSize
                 }
-                hourText += getHours(hour)
-                if (minute == 30 || minute == 0)
-                    hourText += " o'clock"
-                canvas.drawText(hourText, x, y, mHourPaint)
             }
-
-        }
-
-        private fun getMinutes(minutes: Int): String {
-            return NumberWordConverter.convert(minutes)
-        }
-
-        private fun getMinutesText(minutes: Int): String {
-            return if (minutes.rem(10) == 1) "minute" else "minutes"
-        }
-
-        private fun getHours(hours: Int): String {
-            var time = ""
-            when (hours) {
-                0, 12 -> time += "twelve"
-                1 -> time += "one"
-                2 -> time += "two"
-                3 -> time += "tree"
-                4 -> time += "four"
-                5 -> time += "five"
-                6 -> time += "six"
-                7 -> time += "seven"
-                8 -> time += "eight"
-                9 -> time += "nine"
-                10 -> time += "ten"
-                11 -> time += "eleven"
-            }
-            return time
+            canvas.drawText(TimeToTextUtil.getFourthLine(minute,hour), x, y, mHourPaint)
         }
 
 
